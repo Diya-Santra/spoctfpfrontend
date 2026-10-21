@@ -5,8 +5,12 @@ import { DIAL_CODES } from '../../data/cases.js'
 const fieldBase =
   'h-11 w-full rounded-[2px] border border-line bg-white px-3.5 text-[15px] text-body outline-none transition-colors focus:border-primary focus:ring-1 focus:ring-primary'
 
+// Options are plain strings, or { value, label } when the shown text differs from the value
+const optionValue = (option) => (typeof option === 'string' ? option : option.value)
+const optionLabel = (option) => (typeof option === 'string' ? option : option.label)
+
 /** Native select styled to match the design (placeholder shown when value is empty). */
-export function SelectField({ label, value, onChange, options, placeholder, id, required }) {
+export function SelectField({ label, value, onChange, options, placeholder, id, required, disabled }) {
   return (
     <div>
       {label && (
@@ -19,13 +23,14 @@ export function SelectField({ label, value, onChange, options, placeholder, id, 
           id={id}
           value={value}
           required={required}
+          disabled={disabled}
           onChange={(event) => onChange(event.target.value)}
-          className={`${fieldBase} cursor-pointer appearance-none pr-10 ${value ? 'text-body' : 'text-body/90'}`}
+          className={`${fieldBase} cursor-pointer appearance-none pr-10 disabled:cursor-not-allowed disabled:bg-neutral-50 ${value ? 'text-body' : 'text-body/90'}`}
         >
           <option value="">{placeholder}</option>
           {options.map((option) => (
-            <option key={option} value={option}>
-              {option}
+            <option key={optionValue(option)} value={optionValue(option)}>
+              {optionLabel(option)}
             </option>
           ))}
         </select>

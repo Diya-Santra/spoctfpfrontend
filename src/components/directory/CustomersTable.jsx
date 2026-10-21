@@ -4,7 +4,7 @@ import { whatsappUrl } from '../../data/customers.js'
 
 const COLUMNS = ['Customer lead', 'Total applicants', 'Assigned CSR', 'Assigned team lead', 'WhatsApp']
 
-function CustomersTable({ customers }) {
+function CustomersTable({ customers, emptyMessage = 'No customers match your search' }) {
   const navigate = useNavigate()
 
   return (
@@ -26,7 +26,7 @@ function CustomersTable({ customers }) {
           {customers.length === 0 ? (
             <tr>
               <td colSpan={COLUMNS.length + 1} className="px-6 py-16 text-center text-muted">
-                No customers match your search
+                {emptyMessage}
               </td>
             </tr>
           ) : (
@@ -39,25 +39,29 @@ function CustomersTable({ customers }) {
                 <td className="whitespace-nowrap py-6 pl-6 pr-4">{customer.lead}</td>
                 <td className="px-4 py-6">
                   <span className="inline-flex whitespace-nowrap rounded-full bg-neutral-100 px-2.5 py-1.5 text-[13px] leading-none text-body">
-                    {customer.applicants.length} {customer.applicants.length === 1 ? 'Applicant' : 'Applicants'}
+                    {customer.applicantCount} {customer.applicantCount === 1 ? 'Applicant' : 'Applicants'}
                   </span>
                 </td>
                 <td className="whitespace-nowrap px-4 py-6">{customer.csr}</td>
                 <td className="whitespace-nowrap px-4 py-6">{customer.teamLead}</td>
                 <td className="px-4 py-6">
-                  <a
-                    href={whatsappUrl(customer.phone)}
-                    target="_blank"
-                    rel="noreferrer"
-                    onClick={(event) => event.stopPropagation()}
-                    className="inline-flex items-center gap-2 whitespace-nowrap rounded-full bg-whatsapp/15 py-1.5 pl-1.5 pr-3 text-sm text-whatsapp-ink transition-colors hover:bg-whatsapp/25"
-                    aria-label={`Message ${customer.lead} on WhatsApp (${customer.phone})`}
-                  >
-                    <span className="flex h-[18px] w-[18px] items-center justify-center rounded-full bg-whatsapp">
-                      <Phone className="h-2.5 w-2.5 fill-white text-white" strokeWidth={1.5} />
-                    </span>
-                    {customer.phone}
-                  </a>
+                  {customer.phone ? (
+                    <a
+                      href={whatsappUrl(customer.phone)}
+                      target="_blank"
+                      rel="noreferrer"
+                      onClick={(event) => event.stopPropagation()}
+                      className="inline-flex items-center gap-2 whitespace-nowrap rounded-full bg-whatsapp/15 py-1.5 pl-1.5 pr-3 text-sm text-whatsapp-ink transition-colors hover:bg-whatsapp/25"
+                      aria-label={`Message ${customer.lead} on WhatsApp (${customer.phone})`}
+                    >
+                      <span className="flex h-[18px] w-[18px] items-center justify-center rounded-full bg-whatsapp">
+                        <Phone className="h-2.5 w-2.5 fill-white text-white" strokeWidth={1.5} />
+                      </span>
+                      {customer.phone}
+                    </a>
+                  ) : (
+                    '-'
+                  )}
                 </td>
                 <td className="pr-5 text-right">
                   <Link

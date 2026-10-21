@@ -3,7 +3,7 @@ import { SlidersHorizontal, ChevronDown } from 'lucide-react'
 /** "Apply filters" button on the left, "Sort by" select on the right. */
 function ListToolbar({ onOpenFilters, activeFilterCount, sorters, sortBy, onSortChange, className = '' }) {
   return (
-    <div className={`flex items-center justify-between border-b border-line px-[18px] pb-4 ${className}`}>
+    <div className={`flex flex-wrap items-center justify-between gap-3 border-b border-line px-0 pb-4 sm:px-[18px] ${className}`}>
       <button
         type="button"
         onClick={onOpenFilters}

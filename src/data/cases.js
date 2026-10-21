@@ -1,4 +1,5 @@
-// Mock data for the frontend only — replace with API calls later.
+// Shared constants and formatting helpers. The filter-drawer lists (CITIES, CSRS, …) are only
+// fallbacks; pages pass the real values from the backend.
 
 export const STAGES = [
   { id: 'created', label: 'Application created', tone: 'created' },
@@ -15,33 +16,13 @@ export const COUNTRIES = ['Germany', 'France', 'Italy', 'Spain', 'Netherlands', 
 export const CSRS = ['Tanvi Joshi', 'Rohan Mehta', 'Priya Nair', 'Neha Sharma', 'Ananya Gupta', 'Siddharth Rao']
 export const TEAM_LEADS = ['Akanksha Sharma', 'Kunal Verma']
 
-// "Add new case" form options
-export const SERVICE_PACKS = ['Standard', 'Premium', 'Concierge']
-export const ADDON_PACKS = ['Travel insurance', 'Flight itinerary', 'Hotel reservation', 'Document translation']
-export const SEXES = ['Male', 'Female', 'Other']
-export const TRAVEL_DOCUMENT_TYPES = ['Passport', 'Emergency travel document', 'Refugee travel document']
-export const NATIONALITIES = ['British', 'Indian', 'American', 'Emirati', 'Australian', 'Canadian']
-export const BIRTH_COUNTRIES = ['United Kingdom', 'India', 'United States', 'United Arab Emirates', 'Australia', 'Canada']
+// "Add new case" dropdowns come from the backend — see lib/lookups.js
 export const DIAL_CODES = [
   { code: '+44', flag: '🇬🇧' },
   { code: '+91', flag: '🇮🇳' },
   { code: '+1', flag: '🇺🇸' },
   { code: '+971', flag: '🇦🇪' },
   { code: '+61', flag: '🇦🇺' },
-]
-
-export const INITIAL_CASES = [
-  { id: 'c1', name: 'Vivek K Singh', city: 'London', country: 'Germany', visa: 'Student', travelDate: '2026-05-22', csr: 'Tanvi Joshi', teamLead: 'Akanksha Sharma', stage: 'created', highPriority: false },
-  { id: 'c2', name: 'Ananya Rao', city: 'Manchester', country: 'France', visa: 'Tourist', travelDate: '2026-06-04', csr: 'Rohan Mehta', teamLead: 'Akanksha Sharma', stage: 'created', highPriority: false },
-  { id: 'c3', name: 'Arjun Kapoor', city: 'London', country: 'Italy', visa: 'Work', travelDate: '2026-06-18', csr: 'Tanvi Joshi', teamLead: 'Kunal Verma', stage: 'created', highPriority: false },
-  { id: 'c4', name: 'Meera Iyer', city: 'Birmingham', country: 'Germany', visa: 'Student', travelDate: '2026-05-20', csr: 'Priya Nair', teamLead: 'Akanksha Sharma', stage: 'review', highPriority: true },
-  { id: 'c5', name: 'Rahul Desai', city: 'London', country: 'Spain', visa: 'Tourist', travelDate: '2026-05-28', csr: 'Tanvi Joshi', teamLead: 'Kunal Verma', stage: 'review', highPriority: true },
-  { id: 'c6', name: 'Sneha Patel', city: 'Edinburgh', country: 'Netherlands', visa: 'Work', travelDate: '2026-07-02', csr: 'Rohan Mehta', teamLead: 'Akanksha Sharma', stage: 'review', highPriority: false },
-  { id: 'c7', name: 'Karan Malhotra', city: 'London', country: 'Germany', visa: 'Work', travelDate: '2026-06-10', csr: 'Tanvi Joshi', teamLead: 'Akanksha Sharma', stage: 'vac', highPriority: false },
-  { id: 'c8', name: 'Ishita Gupta', city: 'Manchester', country: 'France', visa: 'Student', travelDate: '2026-05-25', csr: 'Priya Nair', teamLead: 'Kunal Verma', stage: 'appointment', highPriority: false },
-  { id: 'c9', name: 'Dev Chauhan', city: 'London', country: 'Italy', visa: 'Tourist', travelDate: '2026-05-19', csr: 'Tanvi Joshi', teamLead: 'Akanksha Sharma', stage: 'appointment', highPriority: true },
-  { id: 'c10', name: 'Nisha Reddy', city: 'Birmingham', country: 'Spain', visa: 'Work', travelDate: '2026-06-30', csr: 'Rohan Mehta', teamLead: 'Kunal Verma', stage: 'submitted', highPriority: false },
-  { id: 'c11', name: 'Aditya Joshi', city: 'London', country: 'Germany', visa: 'Student', travelDate: '2026-07-15', csr: 'Priya Nair', teamLead: 'Akanksha Sharma', stage: 'decision', highPriority: false },
 ]
 
 // Case states shown in the "Active cases" table
@@ -55,53 +36,54 @@ export const CASE_STATES = [
   { id: 'customerReview', label: 'Customer document review', tone: 'customer' },
 ]
 
-const minutesAgo = (minutes) => new Date(Date.now() - minutes * 60_000).toISOString()
-
-export const ACTIVE_CASES = [
-  { id: 'a1', name: 'Aarav Sharma', customerLead: 'Aarav Sharma', city: 'London', country: 'France', visa: 'Student', travelDate: '2026-11-12', csr: 'Neha Sharma', teamLead: 'Akanksha Sharma', state: 'created', updatedAt: minutesAgo(2) },
-  { id: 'a2', name: 'Vivek K Singh', customerLead: 'Vivek K Singh', city: 'Manchester', country: 'Germany', visa: 'Travel', travelDate: '2026-11-12', csr: 'Tanvi Joshi', teamLead: 'Akanksha Sharma', state: 'review', updatedAt: minutesAgo(60) },
-  { id: 'a3', name: 'Ananya Sharma', customerLead: 'Ananya Sharma', city: 'London', country: 'Switzerland', visa: 'Travel', travelDate: '2026-11-12', csr: 'Tanvi Joshi', teamLead: 'Kunal Verma', state: 'vac', updatedAt: minutesAgo(120) },
-  { id: 'a4', name: 'Aditya Gupta', customerLead: 'Aditya Gupta', city: 'Birmingham', country: 'Switzerland', visa: 'Travel', travelDate: '2026-11-12', csr: 'Ananya Gupta', teamLead: 'Kunal Verma', state: 'appointment', updatedAt: minutesAgo(30) },
-  { id: 'a5', name: 'Sneha Singh', customerLead: 'Sneha Singh', city: 'London', country: 'Belgium', visa: 'Student', travelDate: '2026-11-12', csr: 'Neha Sharma', teamLead: 'Akanksha Sharma', state: 'booked', updatedAt: minutesAgo(13) },
-  { id: 'a6', name: 'Arjun Mehta', customerLead: 'Arjun Mehta', city: 'Edinburgh', country: 'Poland', visa: 'Travel', travelDate: '2026-11-12', csr: 'Siddharth Rao', teamLead: 'Kunal Verma', state: 'documents', updatedAt: minutesAgo(60) },
-  { id: 'a7', name: 'Devansh Kapoor', customerLead: 'Devansh Kapoor', city: 'London', country: 'Croatia', visa: 'Travel', travelDate: '2026-11-12', csr: 'Tanvi Joshi', teamLead: 'Akanksha Sharma', state: 'customerReview', updatedAt: minutesAgo(60) },
-  { id: 'a8', name: 'Kavya Nair', customerLead: 'Kavya Nair', city: 'Manchester', country: 'Netherlands', visa: 'Work', travelDate: '2026-11-20', csr: 'Siddharth Rao', teamLead: 'Kunal Verma', state: 'created', updatedAt: minutesAgo(180) },
-  { id: 'a9', name: 'Rohan Verma', customerLead: 'Rohan Verma', city: 'London', country: 'Italy', visa: 'Travel', travelDate: '2026-12-02', csr: 'Neha Sharma', teamLead: 'Akanksha Sharma', state: 'review', updatedAt: minutesAgo(240) },
-  { id: 'a10', name: 'Ishaan Rao', customerLead: 'Ishaan Rao', city: 'Birmingham', country: 'Spain', visa: 'Student', travelDate: '2026-12-15', csr: 'Ananya Gupta', teamLead: 'Kunal Verma', state: 'documents', updatedAt: minutesAgo(1440) },
-]
+// "Add new case" → Details step. Dropdown fields hold the backend id as a string.
+export const EMPTY_LEAD = {
+  fullName: '',
+  phoneCode: '+44',
+  phone: '',
+  countryId: '',
+  cityId: '',
+  travelDate: '',
+  visaCategoryId: '',
+  servicePackId: '',
+  addOnPackId: '', // optional
+  csrId: '',
+  teamLeadId: '',
+}
 
 export const EMPTY_APPLICANT = {
   firstName: '',
   surname: '',
-  sex: '',
+  genderId: '',
   dateOfBirth: '',
-  documentType: '',
+  documentType: '', // travel document type code, e.g. ORDINARY_PASSPORT
   documentNumber: '',
   issueDate: '',
   expiryDate: '',
-  nationality: '',
-  placeOfBirth: '',
+  nationalityId: '', // country id
+  placeOfBirthId: '', // city id
   phoneCode: '+44',
   phone: '',
   document: null,
 }
 
-// "Add new case" → Payment step
-export const MINIMUM_DEPOSIT = 10_000
-export const BANK_ACCOUNTS = ['Barclays •••• 4821', 'HSBC •••• 1093', 'Lloyds •••• 7756', 'NatWest •••• 3310']
-
 export const EMPTY_PAYMENT = {
   amount: '',
-  bankAccount: '',
+  bankAccountId: '',
   paidAt: '', // datetime-local value, in the user's timezone
   reference: '',
 }
 
-const gbp = new Intl.NumberFormat('en-GB', { style: 'currency', currency: 'GBP' })
+/** formatMoney(10000, 'EUR') -> "€10,000.00" */
+export function formatMoney(amount, currencyCode = 'GBP') {
+  return new Intl.NumberFormat('en-GB', { style: 'currency', currency: currencyCode }).format(amount)
+}
 
-/** "£10,000.00" */
-export function formatGBP(amount) {
-  return gbp.format(amount)
+/** currencySymbol('GBP') -> "£" */
+export function currencySymbol(currencyCode = 'GBP') {
+  return new Intl.NumberFormat('en-GB', { style: 'currency', currency: currencyCode })
+    .formatToParts(0)
+    .find((part) => part.type === 'currency').value
 }
 
 export const EMPTY_FILTERS = {

@@ -4,7 +4,7 @@ import { Check } from 'lucide-react'
 /** Horizontal step indicator: done steps get a filled check, the active one a filled number, upcoming ones an outlined number. */
 function Stepper({ steps, current }) {
   return (
-    <ol className="flex h-16 items-center gap-4 rounded-[2px] border border-line px-6">
+    <ol className="flex h-16 items-center gap-3 rounded-[2px] border border-line px-3 sm:gap-4 sm:px-6">
       {steps.map((step, index) => {
         const done = index < current
         const active = index === current
@@ -28,7 +28,7 @@ function Stepper({ steps, current }) {
                   {index + 1}
                 </span>
               )}
-              {step}
+              <span className={active ? '' : 'hidden sm:inline'}>{step}</span>
             </li>
           </Fragment>
         )

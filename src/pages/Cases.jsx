@@ -1,5 +1,5 @@
 import { useCallback, useMemo, useState } from 'react'
-import { useLocation, useNavigate } from 'react-router-dom'
+import { useNavigate } from 'react-router-dom'
 import Sidebar from '../components/layout/Sidebar.jsx'
 import Topbar from '../components/layout/Topbar.jsx'
 import PageHeader from '../components/layout/PageHeader.jsx'
@@ -8,8 +8,8 @@ import Pagination from '../components/ui/Pagination.jsx'
 import CasesTable from '../components/cases/CasesTable.jsx'
 import FilterDrawer from '../components/dashboard/FilterDrawer.jsx'
 import { downloadCsv } from '../lib/csv.js'
+import { filterOptions, toListCase, useCaseRows } from '../lib/cases.js'
 import {
-  ACTIVE_CASES,
   CASE_STATES,
   EMPTY_FILTERS,
   countActiveFilters,
@@ -27,22 +27,19 @@ const SORTERS = {
 }
 
 function exportCases(rows) {
-  const stateLabel = (id) => CASE_STATES.find((s) => s.id === id)?.label ?? id
+  const stateLabel = (row) => row.stateLabel ?? CASE_STATES.find((s) => s.id === row.state)?.label ?? row.state
   downloadCsv(
     'active-cases.csv',
     ['Applicant name', 'Customer lead', 'Destination country', 'Visa category', 'Travel date', 'Assigned CSR', 'State', 'Last updated'],
-    rows.map((r) => [r.name, r.customerLead, r.country, r.visa, formatDate(r.travelDate), r.csr, stateLabel(r.state), r.updatedAt]),
+    rows.map((r) => [r.name, r.customerLead, r.country, r.visa, formatDate(r.travelDate), r.csr, stateLabel(r), r.updatedAt]),
   )
 }
 
 function Cases() {
   const navigate = useNavigate()
-  const location = useLocation()
-  // A case saved on the "Add new case" page arrives via router state
-  const [cases] = useState(() => {
-    const newCase = location.state?.newCase
-    return newCase ? [newCase, ...ACTIVE_CASES] : ACTIVE_CASES
-  })
+  // Straight from the database, so a case saved on "Add new case" shows up here too
+  const loadState = useCaseRows()
+  const cases = useMemo(() => loadState.rows.map(toListCase), [loadState.rows])
   const [search, setSearch] = useState('')
   const [filters, setFilters] = useState(EMPTY_FILTERS)
   const [sortBy, setSortBy] = useState('travelDate')
@@ -50,6 +47,8 @@ function Cases() {
   const [filterOpen, setFilterOpen] = useState(false)
 
   const closeFilter = useCallback(() => setFilterOpen(false), [])
+
+  const options = useMemo(() => filterOptions(cases), [cases])
 
   // Any change to what's listed sends the user back to the first page
   const resetPage = (setter) => (value) => {
@@ -73,10 +72,10 @@ function Cases() {
     <div className="min-h-screen bg-white">
       <Sidebar />
 
-      <div className="ml-60 flex min-h-screen min-w-0 flex-col">
+      <div className="flex min-h-screen min-w-0 flex-col lg:ml-60">
         <Topbar search={search} onSearchChange={resetPage(setSearch)} userName="SPOC" />
 
-        <main className="flex min-w-0 flex-1 flex-col px-8 pb-12 pt-9">
+        <main className="flex min-w-0 flex-1 flex-col px-4 pb-12 pt-9 sm:px-8">
           <PageHeader
             title="Active cases"
             onDownload={() => exportCases(visibleCases)}
@@ -93,7 +92,18 @@ function Cases() {
           />
 
           <div className="mt-8">
-            <CasesTable cases={pageCases} />
+            <CasesTable
+              cases={pageCases}
+              emptyMessage={
+                loadState.loading
+                  ? 'Loading cases…'
+                  : loadState.error
+                    ? `Couldn't load cases: ${loadState.error.message}`
+                    : cases.length === 0
+                      ? 'No cases yet'
+                      : undefined
+              }
+            />
           </div>
 
           <div className="mt-24">
@@ -102,7 +112,7 @@ function Cases() {
         </main>
       </div>
 
-      <FilterDrawer open={filterOpen} onClose={closeFilter} filters={filters} onApply={resetPage(setFilters)} />
+      <FilterDrawer open={filterOpen} onClose={closeFilter} filters={filters} onApply={resetPage(setFilters)} options={options} />
     </div>
   )
 }

@@ -5,7 +5,16 @@ import Drawer from '../ui/Drawer.jsx'
 import { Checkbox, SelectField, PrimaryButton, OutlineButton } from '../ui/FormControls.jsx'
 import { CITIES, COUNTRIES, CSRS, TEAM_LEADS, VISA_CATEGORIES, EMPTY_FILTERS } from '../../data/cases.js'
 
-function FilterDrawer({ open, onClose, filters, onApply }) {
+const DEFAULT_OPTIONS = {
+  cities: CITIES,
+  countries: COUNTRIES,
+  csrs: CSRS,
+  teamLeads: TEAM_LEADS,
+  visaCategories: VISA_CATEGORIES,
+}
+
+/** `options` lists the values each filter offers; defaults to the mock data. */
+function FilterDrawer({ open, onClose, filters, onApply, options = DEFAULT_OPTIONS }) {
   // Draft state — only committed on "Apply filter"
   const [draft, setDraft] = useState(filters)
   const [wasOpen, setWasOpen] = useState(open)
@@ -56,7 +65,7 @@ function FilterDrawer({ open, onClose, filters, onApply }) {
         <fieldset>
           <legend className="mb-3 text-[15px] font-medium text-ink">Visa category</legend>
           <div className="flex flex-wrap gap-x-5 gap-y-2">
-            {VISA_CATEGORIES.map((category) => (
+            {options.visaCategories.map((category) => (
               <Checkbox
                 key={category}
                 label={category}
@@ -67,11 +76,11 @@ function FilterDrawer({ open, onClose, filters, onApply }) {
           </div>
         </fieldset>
 
-        <SelectField id="f-city" value={draft.city} onChange={set('city')} options={CITIES} placeholder="Application city" />
-        <SelectField id="f-country" value={draft.country} onChange={set('country')} options={COUNTRIES} placeholder="Destination country" />
-        <SelectField id="f-visa-catagory" value={draft.visaCategories} onChange={set('visaCategories')} options={VISA_CATEGORIES} placeholder="Visa category" />
-        <SelectField id="f-csr" value={draft.csr} onChange={set('csr')} options={CSRS} placeholder="Assigned CSR" />
-        <SelectField id="f-lead" value={draft.teamLead} onChange={set('teamLead')} options={TEAM_LEADS} placeholder="Assigned team lead" />
+        <SelectField id="f-city" value={draft.city} onChange={set('city')} options={options.cities} placeholder="Application city" />
+        <SelectField id="f-country" value={draft.country} onChange={set('country')} options={options.countries} placeholder="Destination country" />
+        <SelectField id="f-visa-catagory" value={draft.visaCategories} onChange={set('visaCategories')} options={options.visaCategories} placeholder="Visa category" />
+        <SelectField id="f-csr" value={draft.csr} onChange={set('csr')} options={options.csrs} placeholder="Assigned CSR" />
+        <SelectField id="f-lead" value={draft.teamLead} onChange={set('teamLead')} options={options.teamLeads} placeholder="Assigned team lead" />
 
         <div className="relative">
           <label htmlFor="f-travel-date" className="sr-only">Travel dates</label>

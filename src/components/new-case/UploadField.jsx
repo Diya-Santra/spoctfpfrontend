@@ -5,10 +5,14 @@ const ACCEPT = '.pdf,.jpg,.jpeg,.png'
 const ACCEPTED_TYPES = ['application/pdf', 'image/jpeg', 'image/png']
 const MAX_BYTES = 10 * 1024 * 1024
 
-/** Dashed click-or-drop zone for a single document; shows the chosen file once picked. */
-function UploadField({ label, file, onChange }) {
+/**
+ * Dashed click-or-drop zone for a single document; shows the chosen file once picked.
+ * `error` comes from the parent (e.g. "required"); a rejected pick shows its own.
+ */
+function UploadField({ label, file, onChange, error: requiredError }) {
   const id = useId()
-  const [error, setError] = useState('')
+  const [pickError, setError] = useState('')
+  const error = pickError || (!file && requiredError)
   const [dragging, setDragging] = useState(false)
 
   const pick = (picked) => {

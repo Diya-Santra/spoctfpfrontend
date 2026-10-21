@@ -4,14 +4,14 @@ import { ChevronDown, ChevronUp, Trash2 } from 'lucide-react'
 import { FormCard } from './FormSection.jsx'
 import UploadField from './UploadField.jsx'
 import { DateField, PhoneField, SelectField, TextField } from '../ui/FormControls.jsx'
-import { BIRTH_COUNTRIES, NATIONALITIES, SEXES, TRAVEL_DOCUMENT_TYPES } from '../../data/cases.js'
 
 const iconButtonBase = 'flex h-8 w-8 items-center justify-center rounded-[2px] transition-colors hover:bg-neutral-200/60'
 const iconButton = `${iconButtonBase} text-body hover:text-ink`
 // The chevron for the state the card is already in is shown faded
 const idleIconButton = `${iconButtonBase} text-muted/60 hover:text-ink`
 
-function ApplicantCard({ applicant, index, total, onChange, onRemove }) {
+/** `lookups` holds the dropdown options; `documentError` is shown under the upload. */
+function ApplicantCard({ applicant, index, total, lookups, documentError, onChange, onRemove }) {
   const [collapsed, setCollapsed] = useState(false)
   const today = new Date().toISOString().slice(0, 10)
   const set = (key) => (value) => onChange({ ...applicant, [key]: value })
@@ -69,17 +69,17 @@ function ApplicantCard({ applicant, index, total, onChange, onRemove }) {
     >
       <TextField id={fieldId('first')} label="First name*" required value={applicant.firstName} onChange={(e) => set('firstName')(e.target.value)} />
       <TextField id={fieldId('surname')} label="Surname*" required value={applicant.surname} onChange={(e) => set('surname')(e.target.value)} />
-      <SelectField id={fieldId('sex')} label="Sex*" required value={applicant.sex} onChange={set('sex')} options={SEXES} placeholder="" />
+      <SelectField id={fieldId('sex')} label="Sex*" required value={applicant.genderId} onChange={set('genderId')} options={lookups.genders} placeholder="" />
 
       <DateField id={fieldId('dob')} label="Date of birth*" required max={today} value={applicant.dateOfBirth} onChange={set('dateOfBirth')} />
-      <SelectField id={fieldId('doc-type')} label="Travel document type*" required value={applicant.documentType} onChange={set('documentType')} options={TRAVEL_DOCUMENT_TYPES} placeholder="" />
+      <SelectField id={fieldId('doc-type')} label="Travel document type*" required value={applicant.documentType} onChange={set('documentType')} options={lookups.documentTypes} placeholder="" />
       <TextField id={fieldId('doc-number')} label="Travel document number*" required value={applicant.documentNumber} onChange={(e) => set('documentNumber')(e.target.value)} />
 
       <DateField id={fieldId('issue')} label="Issue date*" required max={today} value={applicant.issueDate} onChange={set('issueDate')} />
       <DateField id={fieldId('expiry')} label="Expiry date*" required min={applicant.issueDate || today} value={applicant.expiryDate} onChange={set('expiryDate')} />
-      <SelectField id={fieldId('nationality')} label="Nationality*" required value={applicant.nationality} onChange={set('nationality')} options={NATIONALITIES} placeholder="" />
+      <SelectField id={fieldId('nationality')} label="Nationality*" required value={applicant.nationalityId} onChange={set('nationalityId')} options={lookups.countries} placeholder="" />
 
-      <SelectField id={fieldId('birthplace')} label="Place of birth*" required value={applicant.placeOfBirth} onChange={set('placeOfBirth')} options={BIRTH_COUNTRIES} placeholder="" />
+      <SelectField id={fieldId('birthplace')} label="Place of birth*" required value={applicant.placeOfBirthId} onChange={set('placeOfBirthId')} options={lookups.birthPlaces} placeholder="" />
       <PhoneField
         id={fieldId('phone')}
         label="Phone number*"
@@ -91,7 +91,7 @@ function ApplicantCard({ applicant, index, total, onChange, onRemove }) {
       />
       <div className="hidden md:block" aria-hidden="true" />
 
-      <UploadField label="Upload travel document" file={applicant.document} onChange={set('document')} />
+      <UploadField label="Upload travel document" file={applicant.document} onChange={set('document')} error={documentError} />
     </FormCard>
   )
 }

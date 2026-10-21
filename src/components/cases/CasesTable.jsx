@@ -16,7 +16,7 @@ const COLUMNS = [
   'Last updated',
 ]
 
-function CasesTable({ cases }) {
+function CasesTable({ cases, emptyMessage = 'No cases match your search or filters' }) {
   return (
     <div className="overflow-x-auto rounded-[2px] border border-line">
       <table className="w-full min-w-[900px] border-collapse text-left text-[15px]">
@@ -36,7 +36,7 @@ function CasesTable({ cases }) {
           {cases.length === 0 ? (
             <tr>
               <td colSpan={COLUMNS.length + 1} className="px-6 py-16 text-center text-muted">
-                No cases match your search or filters
+                {emptyMessage}
               </td>
             </tr>
           ) : (
@@ -53,9 +53,9 @@ function CasesTable({ cases }) {
                 <td className="whitespace-nowrap px-4 py-7">{formatDate(item.travelDate)}</td>
                 <td className="whitespace-nowrap px-4 py-7">{item.csr}</td>
                 <td className="px-4 py-7">
-                  <StateBadge state={item.state} />
+                  <StateBadge state={item.state} label={item.stateLabel} />
                 </td>
-                <td className="whitespace-nowrap px-4 py-7">{formatRelativeTime(item.updatedAt)}</td>
+                <td className="whitespace-nowrap px-4 py-7">{item.updatedAt ? formatRelativeTime(item.updatedAt) : '-'}</td>
                 <td className="pr-5 text-right">
                   <ChevronRight className="ml-auto h-5 w-5 text-muted" strokeWidth={1.5} aria-hidden="true" />
                 </td>

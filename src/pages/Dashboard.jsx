@@ -1,5 +1,5 @@
 import { useCallback, useMemo, useState } from 'react'
-import { useLocation, useNavigate } from 'react-router-dom'
+import { useNavigate } from 'react-router-dom'
 import Sidebar from '../components/layout/Sidebar.jsx'
 import Topbar from '../components/layout/Topbar.jsx'
 import PageHeader from '../components/layout/PageHeader.jsx'
@@ -7,7 +7,8 @@ import ListToolbar from '../components/ui/ListToolbar.jsx'
 import StageColumn from '../components/dashboard/StageColumn.jsx'
 import FilterDrawer from '../components/dashboard/FilterDrawer.jsx'
 import { downloadCsv } from '../lib/csv.js'
-import { STAGES, INITIAL_CASES, EMPTY_FILTERS, countActiveFilters, matchesFilters, matchesSearch } from '../data/cases.js'
+import { STAGES, EMPTY_FILTERS, countActiveFilters, matchesFilters, matchesSearch } from '../data/cases.js'
+import { filterOptions, toBoardCards, useCaseRows } from '../lib/cases.js'
 
 const SORTERS = {
   travelDate: { label: 'Travel dates', fn: (a, b) => a.travelDate.localeCompare(b.travelDate) },
@@ -25,12 +26,10 @@ function exportCsv(rows) {
 
 function Dashboard() {
   const navigate = useNavigate()
-  const location = useLocation()
-  // A case saved on the "Add new case" page arrives via router state
-  const [cases] = useState(() => {
-    const newCase = location.state?.newCase
-    return newCase ? [newCase, ...INITIAL_CASES] : INITIAL_CASES
-  })
+  // One card per applicant, straight from the database, so a case saved on "Add new case" shows up too
+  const { rows, loading, error } = useCaseRows()
+  const cases = useMemo(() => rows.flatMap(toBoardCards), [rows])
+  const options = useMemo(() => filterOptions(cases), [cases])
   const [search, setSearch] = useState('')
   const [filters, setFilters] = useState(EMPTY_FILTERS)
   const [sortBy, setSortBy] = useState('travelDate')
@@ -50,10 +49,10 @@ function Dashboard() {
     <div className="min-h-screen bg-white">
       <Sidebar />
 
-      <div className="ml-60 flex min-h-screen min-w-0 flex-col">
+      <div className="flex min-h-screen min-w-0 flex-col lg:ml-60">
         <Topbar search={search} onSearchChange={setSearch} userName="SPOC" />
 
-        <main className="flex min-w-0 flex-1 flex-col px-8 pb-12 pt-9">
+        <main className="flex min-w-0 flex-1 flex-col px-4 pb-12 pt-9 sm:px-8">
           <PageHeader
             eyebrow="Operational overview"
             title="Dashboard"
@@ -70,6 +69,12 @@ function Dashboard() {
             onSortChange={setSortBy}
           />
 
+          {(loading || error) && (
+            <p role={error ? 'alert' : undefined} className={`mt-6 text-sm ${error ? 'text-alert' : 'text-muted'}`}>
+              {error ? `Couldn't load cases: ${error.message}` : 'Loading cases…'}
+            </p>
+          )}
+
           {/* Kanban board */}
           <div className="scrollbar-board mt-8 flex flex-1 gap-[18px] overflow-x-auto pb-10">
             {STAGES.map((stage) => (
@@ -83,7 +88,7 @@ function Dashboard() {
         </main>
       </div>
 
-      <FilterDrawer open={filterOpen} onClose={closeFilter} filters={filters} onApply={setFilters} />
+      <FilterDrawer open={filterOpen} onClose={closeFilter} filters={filters} onApply={setFilters} options={options} />
     </div>
   )
 }

@@ -1,10 +1,13 @@
 import { Coins } from 'lucide-react'
 import { SectionHeading } from './FormSection.jsx'
-import { formatGBP } from '../../data/cases.js'
+import { formatMoney } from '../../data/cases.js'
 
-/** Minimum deposit vs. total paid so far — the total turns green once the minimum is covered. */
-function PaymentSummary({ minimum, totalPaid }) {
-  const covered = totalPaid >= minimum
+/**
+ * Minimum deposit vs. total paid so far — the total turns green once the minimum is covered.
+ * `minimum` is null while the backend is still working it out.
+ */
+function PaymentSummary({ minimum, totalPaid, currencyCode }) {
+  const covered = minimum != null && totalPaid >= minimum
 
   return (
     <section className="w-full max-w-[400px] rounded-[2px] border border-line">
@@ -14,7 +17,7 @@ function PaymentSummary({ minimum, totalPaid }) {
       <dl className="grid grid-cols-2">
         <div className="flex flex-col items-center justify-center gap-1 border-r border-line px-4 py-5">
           <dt className="text-sm text-body">Minimum deposit required</dt>
-          <dd className="text-xl font-semibold text-ink">{formatGBP(minimum)}</dd>
+          <dd className="text-xl font-semibold text-ink">{minimum == null ? '…' : formatMoney(minimum, currencyCode)}</dd>
         </div>
         <div
           className={`flex flex-col items-center justify-center gap-1 px-4 py-5 ${
@@ -22,7 +25,7 @@ function PaymentSummary({ minimum, totalPaid }) {
           }`}
         >
           <dt className="text-sm">Total amount paid</dt>
-          <dd className="text-xl font-semibold">{formatGBP(totalPaid)}</dd>
+          <dd className="text-xl font-semibold">{formatMoney(totalPaid, currencyCode)}</dd>
         </div>
       </dl>
     </section>

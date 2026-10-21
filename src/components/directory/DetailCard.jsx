@@ -1,8 +1,11 @@
 import { useId, useState } from 'react'
 import { ChevronDown, ChevronUp } from 'lucide-react'
 
-/** Bordered card with an uppercase title; `collapsible` adds a chevron that hides the body. */
-export function DetailCard({ title, collapsible = false, actions, children }) {
+/**
+ * Bordered card with an uppercase title (and optional `icon`); `collapsible` adds a chevron that
+ * hides the body.
+ */
+export function DetailCard({ title, icon: Icon, collapsible = false, actions, children }) {
   const [open, setOpen] = useState(true)
   const bodyId = useId()
   const Chevron = open ? ChevronUp : ChevronDown
@@ -12,7 +15,10 @@ export function DetailCard({ title, collapsible = false, actions, children }) {
       <header
         className={`flex h-14 items-center justify-between gap-4 bg-neutral-50 px-6 ${open ? 'border-b border-line' : ''}`}
       >
-        <h3 className="text-[13px] font-medium uppercase tracking-[0.12em] text-body">{title}</h3>
+        <h3 className="flex items-center gap-2.5 text-[13px] font-medium uppercase tracking-[0.12em] text-body">
+          {Icon && <Icon className="h-[18px] w-[18px] text-muted" strokeWidth={1.75} />}
+          {title}
+        </h3>
         <div className="flex items-center gap-3">
           {actions}
           {collapsible && (
@@ -46,7 +52,7 @@ export function DetailFields({ fields }) {
       {fields.map(({ label, value, span }) => (
         <div key={label} className={`min-w-0 ${span === 2 ? 'sm:col-span-2' : ''}`}>
           <dt className="text-sm text-muted">{label}</dt>
-          <dd className="mt-1 text-[15px] text-ink">{value || '-'}</dd>
+          <dd className="mt-1 break-words text-[15px] text-ink">{value || '-'}</dd>
         </div>
       ))}
     </dl>

@@ -23,11 +23,11 @@ function Topbar({
   const time = useLocalTime()
 
   return (
-    <header className="sticky top-0 z-20 flex h-[72px] items-center gap-6 border-b border-line bg-white px-8">
-      <h1 className="whitespace-nowrap text-xl font-semibold text-ink">{title}</h1>
-      <span className="h-8 w-px bg-line" aria-hidden="true" />
+    <header className="sticky top-0 z-20 flex h-[72px] items-center gap-3 border-b border-line bg-white pl-16 pr-4 sm:gap-6 sm:pr-8 lg:pl-8">
+      <h1 className="hidden whitespace-nowrap text-xl font-semibold text-ink md:block">{title}</h1>
+      <span className="hidden h-8 w-px bg-line md:block" aria-hidden="true" />
 
-      <label className="relative w-full max-w-[400px]">
+      <label className="relative min-w-0 flex-1 md:max-w-[400px]">
         <span className="sr-only">Search cases</span>
         <Search className="pointer-events-none absolute left-3.5 top-1/2 h-5 w-5 -translate-y-1/2 text-muted" />
         <input
@@ -39,7 +39,7 @@ function Topbar({
         />
       </label>
 
-      <div className="ml-auto flex items-center gap-5">
+      <div className="ml-auto flex shrink-0 items-center gap-3 sm:gap-5">
         <span className="hidden items-center gap-2 whitespace-nowrap text-[15px] text-body lg:flex">
           <Clock className="h-5 w-5 text-muted" strokeWidth={1.75} />
           {time} (Local)
