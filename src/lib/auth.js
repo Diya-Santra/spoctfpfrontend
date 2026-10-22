@@ -1,4 +1,4 @@
-export const API_URL = import.meta.env.VITE_API_URL ?? 'http://localhost:3002'
+export const API_URL = import.meta.env.VITE_API_URL ?? 'http://localhost:3003'
 export const LOGIN_URL = import.meta.env.VITE_LOGIN_URL ?? 'http://localhost:5173/'
 
 // The login app stores the `token` cookie on localhost, which the browser
