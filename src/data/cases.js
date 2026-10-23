@@ -6,8 +6,13 @@ export const STAGES = [
   { id: 'review', label: 'Information for review', tone: 'review' },
   { id: 'vac', label: 'VAC account creation', tone: 'vac' },
   { id: 'appointment', label: 'Appointment monitoring', tone: 'appointment' },
-  { id: 'submitted', label: 'Documents submitted', tone: 'submitted' },
-  { id: 'decision', label: 'Visa decision', tone: 'decision' },
+  { id: 'booked', label: 'Appointment booked', tone: 'booked' },
+  { id: 'documents', label: 'Documents in review', tone: 'documents' },
+  { id: 'customerReview', label: 'Customer document review', tone: 'customer' },
+  { id: 'preBalance', label: 'Pre-balance dispatch', tone: 'preBalance' },
+  { id: 'awaitingBalance', label: 'Awaiting balance payment', tone: 'awaitingBalance' },
+  { id: 'paymentCompleted', label: 'Payment completed', tone: 'paymentCompleted' },
+  { id: 'closed', label: 'Application closed', tone: 'closed' },
 ]
 
 export const VISA_CATEGORIES = ['Work', 'Tourist', 'Travel']

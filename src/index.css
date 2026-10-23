@@ -50,6 +50,34 @@
   --color-stage-decision-bg: #e8f2fc;
   --color-stage-decision-badge: #c5def7;
 
+  --color-stage-booked: #b5730a;
+  --color-stage-booked-bg: #fef3e2;
+  --color-stage-booked-badge: #fbe2b0;
+
+  --color-stage-documents: #4d8a12;
+  --color-stage-documents-bg: #f3fae9;
+  --color-stage-documents-badge: #dcf0c4;
+
+  --color-stage-customer: #4d8a12;
+  --color-stage-customer-bg: #f1f9e6;
+  --color-stage-customer-badge: #d6eebb;
+
+  --color-stage-prebalance: #2f8a3a;
+  --color-stage-prebalance-bg: #ecf7e8;
+  --color-stage-prebalance-badge: #cbe9c4;
+
+  --color-stage-awaiting: #2f9e44;
+  --color-stage-awaiting-bg: #f6fcf7;
+  --color-stage-awaiting-badge: #d3f0da;
+
+  --color-stage-paid: #2b8a3e;
+  --color-stage-paid-bg: #e6f6ea;
+  --color-stage-paid-badge: #c3ebcd;
+
+  --color-stage-closed: #6b7280;
+  --color-stage-closed-bg: #f1f2f4;
+  --color-stage-closed-badge: #dcdee2;
+
   /* Extra case states (cases table only) */
   --color-state-booked: #a67c00;
   --color-state-booked-badge: #fbefc0;

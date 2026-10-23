@@ -12,14 +12,20 @@ const STAGE_BY_STATUS = {
   application_information_for_review: 'review',
   vac_account_creation: 'vac',
   appointment_monitoring: 'appointment',
-  appointment_booked: 'appointment',
+  appointment_booked: 'booked',
+  documents_in_review: 'documents',
+  customer_document_review: 'customerReview',
+  pre_balance_dispatch: 'preBalance',
+  awaiting_balance_payment: 'awaitingBalance',
+  payment_completed: 'paymentCompleted',
+  application_closed: 'closed',
 }
 
-// Statuses not listed above: a final one (visa granted, refused, …) is a visa
-// decision; anything else comes after the appointment, i.e. the documents stage.
+// Statuses not listed above: a final one (visa granted, refused, …) closes the
+// application; anything else comes after the appointment, i.e. documents in review.
 function stageOf(application) {
   if (STAGE_BY_STATUS[application.status_code]) return STAGE_BY_STATUS[application.status_code]
-  return application.is_terminal ? 'decision' : 'submitted'
+  return application.is_terminal ? 'closed' : 'documents'
 }
 
 // Fields every row shares, taken from the case
