@@ -7,7 +7,7 @@ import Stepper from '../components/new-case/Stepper.jsx'
 import { SectionHeading } from '../components/new-case/FormSection.jsx'
 import PaymentSummary from '../components/new-case/PaymentSummary.jsx'
 import PaymentRow from '../components/new-case/PaymentRow.jsx'
-import { OutlineButton, PrimaryButton } from '../components/ui/FormControls.jsx'
+import { Form, OutlineButton, PrimaryButton } from '../components/ui/FormControls.jsx'
 import { EMPTY_PAYMENT } from '../data/cases.js'
 import { apiGet } from '../lib/api.js'
 import { useLookups } from '../lib/lookups.js'
@@ -73,8 +73,7 @@ function NewCasePayment() {
   // Keep everything entered so far when stepping back to the details form
   const backToDetails = () => navigate('/spoc/cases/new', { state: { from, draft: { ...draft, payments } } })
 
-  const handleSubmit = (event) => {
-    event.preventDefault()
+  const handleSubmit = () => {
     if (!quote) return
     navigate('/spoc/cases/new/review', { state: { from, draft: { ...draft, payments, quote } } })
   }
@@ -107,7 +106,7 @@ function NewCasePayment() {
             <Stepper steps={STEPS} current={1} />
           </div>
 
-          <form onSubmit={handleSubmit} className="mt-8 flex flex-col">
+          <Form onSubmit={handleSubmit} className="mt-8 flex flex-col">
             <PaymentSummary minimum={quote?.minimum ?? null} totalPaid={totalPaid} currencyCode={quote?.currencyCode} />
 
             {loadError && (
@@ -175,7 +174,7 @@ function NewCasePayment() {
                 </PrimaryButton>
               </div>
             </div>
-          </form>
+          </Form>
         </main>
       </div>
     </div>

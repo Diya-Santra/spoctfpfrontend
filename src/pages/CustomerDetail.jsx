@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import {
   ArrowLeft,
@@ -19,10 +19,24 @@ import {
 import Sidebar from '../components/layout/Sidebar.jsx'
 import Topbar from '../components/layout/Topbar.jsx'
 import StateBadge from '../components/cases/StateBadge.jsx'
-import { DetailCard, DetailFields } from '../components/directory/DetailCard.jsx'
+import { DetailCard, DetailFields, EditButton } from '../components/directory/DetailCard.jsx'
+import PersonalInformationForm from '../components/directory/PersonalInformationForm.jsx'
+import {
+  AddressContactForm,
+  AdditionalInformationForm,
+  DocumentsForm,
+  FinancingForm,
+  OccupationForm,
+  PreviousVisaForm,
+  ResidencePermitForm,
+  TravelDocumentsForm,
+  TravelInformationForm,
+} from '../components/directory/EditForms.jsx'
 import { formatDate, formatDateTime, formatMoney } from '../data/cases.js'
 import { whatsappUrl } from '../data/customers.js'
-import { apiGet } from '../lib/api.js'
+import { apiDelete, apiGet, apiPatch, apiPost } from '../lib/api.js'
+import { useEditLookups } from '../lib/lookups.js'
+import { useToast } from '../lib/toast.js'
 
 const fullName = (...parts) => parts.filter(Boolean).join(' ')
 
@@ -52,7 +66,10 @@ function Assignee({ label, name }) {
   return (
     <div>
       <p className="text-xs font-medium uppercase tracking-[0.12em] text-muted">{label}</p>
-      <p className="mt-1 flex h-9 items-center text-[15px] text-ink">{name || '-'}</p>
+      <p className="mt-1 flex h-9 items-center gap-1 text-[15px] text-ink">
+        {name || '-'}
+        <EditButton label={`Edit ${label}`} />
+      </p>
     </div>
   )
 }
@@ -64,28 +81,36 @@ function SubHeading({ children }) {
 
 // GET /api/case/customer/:id, then that case's payments. The case id is only
 // used for the second request — it is never shown.
+async function fetchCustomer(contactId, signal) {
+  const customer = await apiGet(`/api/case/customer/${encodeURIComponent(contactId)}`, null, signal)
+  const payments = await apiGet(`/api/cases/${customer.case_id}/deposit/payments`, null, signal)
+  return { customer, payments }
+}
+
 function useCustomer(contactId) {
   const [state, setState] = useState({ customer: null, payments: [], error: null })
 
+  const reload = useCallback(async () => {
+    const data = await fetchCustomer(contactId)
+    setState({ ...data, error: null })
+  }, [contactId])
+
   useEffect(() => {
     const controller = new AbortController()
-    apiGet(`/api/case/customer/${encodeURIComponent(contactId)}`, null, controller.signal)
-      .then(async (customer) => {
-        const payments = await apiGet(`/api/cases/${customer.case_id}/deposit/payments`, null, controller.signal)
-        setState({ customer, payments, error: null })
-      })
+    fetchCustomer(contactId, controller.signal)
+      .then((data) => setState({ ...data, error: null }))
       .catch((error) => {
         if (error.name !== 'AbortError') setState({ customer: null, payments: [], error })
       })
     return () => controller.abort()
   }, [contactId])
 
-  return state
+  return { ...state, reload }
 }
 
 // Travel plan and destination preferences from GET /travel-info/:form_id.
 // A 404 just means the customer hasn't filled that part of the form yet.
-function useTravelInfo(formId) {
+function useTravelInfo(formId, version) {
   const [state, setState] = useState({ formId: null, data: null })
 
   useEffect(() => {
@@ -97,10 +122,55 @@ function useTravelInfo(formId) {
         if (error.name !== 'AbortError') setState({ formId, data: null })
       })
     return () => controller.abort()
-  }, [formId])
+  }, [formId, version])
 
   // Ignore a previous applicant's result while the new one loads
   return state.formId === formId ? state.data : null
+}
+
+// The card's pencil swaps its read-only body for `renderForm(save, lookups)`. Saving
+// sends `save.submit(values)` to `save` (by default PATCH the card's `section`), then
+// reloads the customer so the card shows what the backend stored.
+function SectionCard({ title, section, applicationId, reload, onSave, locked, renderForm, children, ...cardProps }) {
+  const { lookups, error: lookupsError } = useEditLookups()
+  const [editing, setEditing] = useState(false)
+  const [saving, setSaving] = useState(false)
+  const toast = useToast()
+
+  const submit = async (values) => {
+    setSaving(true)
+    try {
+      await (onSave ? onSave(values) : apiPatch(`/api/case/application/${applicationId}/${section}`, values))
+      await reload()
+      setEditing(false)
+      toast({ type: 'success', title: 'Changes saved', message: `${title} has been saved successfully` })
+    } catch (err) {
+      toast({ type: 'error', title: 'Unable to save details', message: err.message })
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  const save = { submit, saving, cancel: () => setEditing(false) }
+
+  let body = children
+  if (editing) {
+    if (lookups) body = renderForm(save, lookups)
+    else if (lookupsError) body = <p role="alert" className="text-sm text-alert">Couldn't load the form options: {lookupsError.message}</p>
+    else body = <p className="text-sm text-muted">Loading form options…</p>
+  }
+
+  return (
+    <DetailCard
+      title={title}
+      editable={!editing && !locked}
+      onEdit={() => setEditing(true)}
+      actions={locked && <span className="text-xs text-muted">Editable once the info form starts</span>}
+      {...cardProps}
+    >
+      {body}
+    </DetailCard>
+  )
 }
 
 function VacAccount({ applicant }) {
@@ -109,18 +179,18 @@ function VacAccount({ applicant }) {
   const password = applicant.vac_password
 
   return (
-    <DetailCard title="VAC account">
+    <DetailCard title="VAC account" editable={false}>
       <dl className="grid grid-cols-1 gap-x-8 gap-y-6 sm:grid-cols-2 lg:grid-cols-4">
         <div>
           <dt className="text-sm text-muted">Account status</dt>
           <dd className="mt-1.5 flex items-center gap-2 text-[15px] text-body">
             <span
-              className={`flex h-[22px] w-[22px] items-center justify-center rounded-[3px] border ${
+              className={`flex h-[18px] w-[18px] items-center justify-center rounded-[3px] border ${
                 required ? 'border-primary bg-primary' : 'border-line bg-white'
               }`}
               aria-hidden="true"
             >
-              {required && <Check className="h-3.5 w-3.5 text-white" strokeWidth={3} />}
+              {required && <Check className="h-3 w-3 text-white" strokeWidth={3} />}
             </span>
             {required ? 'VAC account required' : 'VAC account not required'}
           </dd>
@@ -160,8 +230,9 @@ function VacAccount({ applicant }) {
 
 // Until the customer fills in the travel part of their form, show what the SPOC
 // entered on "Add new case" (destination, application city, travel date, visa).
-function TravelInformation({ applicant, caseInfo }) {
-  const travel = useTravelInfo(applicant.form_id)
+function TravelInformation({ applicant, caseInfo, reload }) {
+  const [version, setVersion] = useState(0)
+  const travel = useTravelInfo(applicant.form_id, version)
   const formPlans = travel?.travel_dates ?? []
   const formPreferences = travel?.destination_preferences ?? []
 
@@ -176,10 +247,25 @@ function TravelInformation({ applicant, caseInfo }) {
       ? [{ destination_country_name: caseInfo.destination_country, application_city_name: caseInfo.application_city }]
       : []
 
+  const visaName = applicant.travel_visa_type || caseInfo.visa_category
+
   return (
-    <DetailCard title="Travel information" collapsible>
+    <SectionCard
+      title="Travel information"
+      section="travel-info"
+      applicationId={applicant.application_id}
+      collapsible
+      locked={!applicant.form_id}
+      reload={async () => {
+        await reload()
+        setVersion((prev) => prev + 1)
+      }}
+      renderForm={(save, lookups) => (
+        <TravelInformationForm visaCode={travel?.visa_type} visaName={visaName} plans={plans} preferences={preferences} lookups={lookups} save={save} />
+      )}
+    >
       <div className="flex flex-col gap-7">
-        <DetailFields fields={[{ label: 'Visa type', value: applicant.travel_visa_type || caseInfo.visa_category }]} />
+        <DetailFields fields={[{ label: 'Visa type', value: visaName }]} />
 
         <div>
           <SubHeading>Travel plan</SubHeading>
@@ -191,11 +277,15 @@ function TravelInformation({ applicant, caseInfo }) {
                 <DetailFields
                   key={index}
                   fields={[
-                    { label: 'Travel dates', value: showDate(plan.travel_date) },
+                    {
+                      label: 'Travel dates',
+                      value: plan.travel_end_date ? `${showDate(plan.travel_date)} – ${showDate(plan.travel_end_date)}` : showDate(plan.travel_date),
+                    },
                     {
                       label: 'Country(ies) to be visited',
                       value: [...(plan.countries_to_visit_names ?? []), ...(plan.countries_to_visit_unresolved ?? [])].join(', '),
                     },
+                    ...(plan.notes ? [{ label: 'Notes', value: plan.notes }] : []),
                   ]}
                 />
               ))}
@@ -228,145 +318,263 @@ function TravelInformation({ applicant, caseInfo }) {
           )}
         </div>
       </div>
-    </DetailCard>
+    </SectionCard>
   )
 }
 
-function ApplicantSections({ applicant, caseInfo, currencyCode }) {
+function PersonalInformation({ applicant, reload }) {
+  return (
+    <SectionCard
+      title="Personal information"
+      section="personal"
+      applicationId={applicant.application_id}
+      reload={reload}
+      collapsible
+      renderForm={(save, lookups) => <PersonalInformationForm applicant={applicant} lookups={lookups} save={save} />}
+    >
+      <DetailFields
+        fields={[
+          { label: 'Name', value: applicant.first_name },
+          { label: 'Surname', value: applicant.surname },
+          {
+            label: 'Have you ever been known by a different name?',
+            value:
+              Number(applicant.had_different_name) && applicant.previous_name
+                ? `Yes — ${applicant.previous_name}`
+                : yesNo(applicant.had_different_name),
+            span: 2,
+          },
+          { label: 'Date of birth', value: showDate(applicant.date_of_birth) },
+          { label: 'Place of birth', value: applicant.place_of_birth },
+          { label: 'Country of birth', value: applicant.country_of_birth },
+          { label: 'Current nationality', value: applicant.nationality },
+          { label: 'Gender', value: applicant.gender },
+          { label: 'Marital status', value: applicant.marital_status },
+        ]}
+      />
+    </SectionCard>
+  )
+}
+
+function TravelDocuments({ applicant, reload }) {
+  return (
+    <SectionCard
+      title="Travel documents details"
+      section="travel-document"
+      applicationId={applicant.application_id}
+      reload={reload}
+      collapsible
+      renderForm={(save, lookups) => <TravelDocumentsForm applicant={applicant} lookups={lookups} save={save} />}
+    >
+      <DetailFields
+        fields={[
+          { label: 'Document type', value: applicant.travel_document_type },
+          { label: 'Document number', value: applicant.travel_document_number },
+          { label: 'Date of issue', value: showDate(applicant.issue_date) },
+          { label: 'Valid until', value: showDate(applicant.expiry_date) },
+        ]}
+      />
+    </SectionCard>
+  )
+}
+
+function AddressContact({ applicant, reload }) {
   const address = applicant.address ?? {}
+
+  return (
+    <SectionCard
+      title="Address & contact information"
+      section="address"
+      applicationId={applicant.application_id}
+      reload={reload}
+      collapsible
+      locked={!applicant.form_id}
+      renderForm={(save, lookups) => (
+        <AddressContactForm
+          address={address}
+          fallbackPhone={applicant.phone_number}
+          fallbackWhatsapp={applicant.whatsapp_number}
+          fallbackEmail={applicant.email}
+          lookups={lookups}
+          save={save}
+        />
+      )}
+    >
+      <DetailFields
+        fields={[
+          { label: 'Post code', value: address.postcode },
+          { label: 'Address line 1', value: address.address_line1 },
+          { label: 'Address line 2', value: address.address_line2 },
+          { label: 'City', value: address.city },
+          { label: 'County', value: address.county },
+          { label: 'Country', value: address.country },
+          // Until the form is filled in, the numbers entered on "Add new case"
+          { label: 'Mobile number', value: address.mobile_number || applicant.phone_number },
+          { label: 'WhatsApp number', value: address.whatsapp_number || applicant.whatsapp_number },
+          { label: 'Email', value: address.email || applicant.email },
+        ]}
+      />
+    </SectionCard>
+  )
+}
+
+function ResidencePermit({ applicant, reload }) {
   const permit = applicant.residence_permit ?? {}
+
+  return (
+    <SectionCard
+      title="Residence permit"
+      section="residence-permit"
+      applicationId={applicant.application_id}
+      reload={reload}
+      collapsible
+      locked={!applicant.form_id}
+      renderForm={(save, lookups) => <ResidencePermitForm permit={permit} lookups={lookups} save={save} />}
+    >
+      <DetailFields
+        fields={[
+          { label: 'Residence permit file / Share code', value: permit.permit_number },
+          { label: 'Residence status / Visa type', value: permit.permit_type },
+          { label: 'Date of issue', value: showDate(permit.issue_date) },
+          { label: 'Valid until', value: showDate(permit.expiry_date) },
+        ]}
+      />
+    </SectionCard>
+  )
+}
+
+function CurrentOccupation({ applicant, currencyCode, reload }) {
   const job = applicant.occupation ?? {}
+
+  return (
+    <SectionCard
+      title="Current occupation"
+      section="occupation"
+      applicationId={applicant.application_id}
+      reload={reload}
+      collapsible
+      locked={!applicant.form_id}
+      renderForm={(save, lookups) => <OccupationForm job={job} currencyCode={currencyCode} lookups={lookups} save={save} />}
+    >
+      <DetailFields
+        fields={[
+          { label: 'Current employment status', value: job.occupation },
+          { label: 'Employer name', value: job.employer_name },
+          { label: 'Role / Designation', value: job.job_title },
+          { label: 'Date of joining', value: showDate(job.start_date) },
+          { label: 'Employer address', value: job.employer_address, span: 2 },
+          { label: 'Email', value: job.employer_email },
+          { label: 'Contact number', value: job.employer_phone },
+          {
+            label: 'Gross annual earnings',
+            value: job.gross_annual_earnings == null ? '' : formatMoney(Number(job.gross_annual_earnings), currencyCode),
+          },
+        ]}
+      />
+    </SectionCard>
+  )
+}
+
+function PreviousVisa({ applicant, reload }) {
   const visa = applicant.visa_history ?? {}
+
+  return (
+    <SectionCard
+      title="Previous visa"
+      section="previous-visa"
+      applicationId={applicant.application_id}
+      reload={reload}
+      collapsible
+      locked={!applicant.form_id}
+      renderForm={(save, lookups) => <PreviousVisaForm visa={visa} lookups={lookups} save={save} />}
+    >
+      <DetailFields
+        fields={[
+          { label: 'Schengen visa in the last 59 months?', value: yesNo(visa.had_schengen_visa_last_59_months) },
+          { label: 'Previous biometrics date', value: showDate(visa.previous_biometrics_date) },
+          { label: 'Visa sticker number', value: visa.visa_sticker_number },
+          {
+            label: 'Visa dates',
+            value: visa.visa_valid_from || visa.visa_valid_to ? `${showDate(visa.visa_valid_from) || '-'} – ${showDate(visa.visa_valid_to) || '-'}` : '',
+          },
+        ]}
+      />
+    </SectionCard>
+  )
+}
+
+function FinancingOfStay({ applicant, reload }) {
   const funding = applicant.financing ?? {}
 
   return (
+    <SectionCard
+      title="Financing of stay"
+      section="financing"
+      applicationId={applicant.application_id}
+      reload={reload}
+      collapsible
+      locked={!applicant.form_id}
+      renderForm={(save, lookups) => <FinancingForm funding={funding} lookups={lookups} save={save} />}
+    >
+      <DetailFields
+        fields={[
+          { label: 'Who will fund the trip?', value: funding.funding_source },
+          { label: 'Name', value: funding.sponsor_first_name },
+          { label: 'Surname', value: funding.sponsor_surname },
+          { label: 'Gender', value: funding.sponsor_gender },
+          { label: 'Address', value: funding.sponsor_address, span: 2 },
+          { label: 'Country', value: funding.sponsor_country },
+          { label: 'Contact number', value: funding.sponsor_contact_number },
+          { label: 'Email', value: funding.sponsor_email },
+          { label: 'Current profession', value: funding.sponsor_occupation },
+        ]}
+      />
+    </SectionCard>
+  )
+}
+
+function AdditionalInformation({ applicant, reload }) {
+  // The EU-family answer is stored with the financing details
+  const joinsEuFamilyMember = applicant.financing?.joins_eu_family_member
+
+  return (
+    <SectionCard
+      title="Additional information"
+      section="additional"
+      applicationId={applicant.application_id}
+      reload={reload}
+      collapsible
+      locked={!applicant.form_id}
+      renderForm={(save) => <AdditionalInformationForm joinsEuFamilyMember={joinsEuFamilyMember} otherNotes={applicant.other_notes} save={save} />}
+    >
+      <DetailFields
+        fields={[
+          {
+            label:
+              'Do you join or travel with a family member from an EU country, the EEA, the Swiss Confederation, or a family member who is a UK national beneficiary of the withdrawal agreement?',
+            value: yesNo(joinsEuFamilyMember),
+            span: 2,
+          },
+          { label: 'Other notes', value: applicant.other_notes, span: 2 },
+        ]}
+      />
+    </SectionCard>
+  )
+}
+
+function ApplicantSections({ applicant, caseInfo, currencyCode, reload }) {
+  return (
     <>
       <VacAccount applicant={applicant} />
-
-      <DetailCard title="Personal information" collapsible>
-        <DetailFields
-          fields={[
-            { label: 'Name', value: applicant.first_name },
-            { label: 'Surname', value: applicant.surname },
-            {
-              label: 'Have you ever been known by a different name?',
-              value:
-                Number(applicant.had_different_name) && applicant.previous_name
-                  ? `Yes — ${applicant.previous_name}`
-                  : yesNo(applicant.had_different_name),
-              span: 2,
-            },
-            { label: 'Date of birth', value: showDate(applicant.date_of_birth) },
-            { label: 'Place of birth', value: applicant.place_of_birth },
-            { label: 'Country of birth', value: applicant.country_of_birth },
-            { label: 'Current nationality', value: applicant.nationality },
-            { label: 'Gender', value: applicant.gender },
-            { label: 'Marital status', value: applicant.marital_status },
-          ]}
-        />
-      </DetailCard>
-
-      <DetailCard title="Travel documents details" collapsible>
-        <DetailFields
-          fields={[
-            { label: 'Document type', value: applicant.travel_document_type },
-            { label: 'Document number', value: applicant.travel_document_number },
-            { label: 'Date of issue', value: showDate(applicant.issue_date) },
-            { label: 'Valid until', value: showDate(applicant.expiry_date) },
-          ]}
-        />
-      </DetailCard>
-
-      <DetailCard title="Address & contact information" collapsible>
-        <DetailFields
-          fields={[
-            { label: 'Post code', value: address.postcode },
-            { label: 'Address line 1', value: address.address_line1 },
-            { label: 'City', value: address.city },
-            { label: 'County', value: address.county },
-            { label: 'Country', value: address.country },
-            // Until the form is filled in, the numbers entered on "Add new case"
-            { label: 'Mobile number', value: address.mobile_number || applicant.phone_number },
-            { label: 'WhatsApp number', value: address.whatsapp_number || applicant.whatsapp_number },
-            { label: 'Email', value: address.email || applicant.email },
-          ]}
-        />
-      </DetailCard>
-
-      <DetailCard title="Residence permit" collapsible>
-        <DetailFields
-          fields={[
-            { label: 'Residence permit file / Share code', value: permit.permit_number },
-            { label: 'Residence status / Visa type', value: permit.permit_type },
-            { label: 'Date of issue', value: showDate(permit.issue_date) },
-            { label: 'Valid until', value: showDate(permit.expiry_date) },
-          ]}
-        />
-      </DetailCard>
-
-      <DetailCard title="Current occupation" collapsible>
-        <DetailFields
-          fields={[
-            { label: 'Current employment status', value: job.occupation },
-            { label: 'Employer name', value: job.employer_name },
-            { label: 'Role / Designation', value: job.job_title },
-            { label: 'Date of joining', value: showDate(job.start_date) },
-            { label: 'Employer address', value: job.employer_address, span: 2 },
-            { label: 'Email', value: job.employer_email },
-            { label: 'Contact number', value: job.employer_phone },
-            {
-              label: 'Gross annual earnings',
-              value: job.gross_annual_earnings == null ? '' : formatMoney(Number(job.gross_annual_earnings), currencyCode),
-            },
-          ]}
-        />
-      </DetailCard>
-
-      <TravelInformation applicant={applicant} caseInfo={caseInfo} />
-
-      <DetailCard title="Previous visa" collapsible>
-        <DetailFields
-          fields={[
-            { label: 'Schengen visa in the last 59 months?', value: yesNo(visa.had_schengen_visa_last_59_months) },
-            { label: 'Previous biometrics date', value: showDate(visa.previous_biometrics_date) },
-            { label: 'Visa sticker number', value: visa.visa_sticker_number },
-            {
-              label: 'Visa dates',
-              value: visa.visa_valid_from || visa.visa_valid_to ? `${showDate(visa.visa_valid_from) || '-'} – ${showDate(visa.visa_valid_to) || '-'}` : '',
-            },
-          ]}
-        />
-      </DetailCard>
-
-      <DetailCard title="Financing of stay" collapsible>
-        <DetailFields
-          fields={[
-            { label: 'Who will fund the trip?', value: funding.funding_source },
-            { label: 'Name', value: funding.sponsor_first_name },
-            { label: 'Surname', value: funding.sponsor_surname },
-            { label: 'Gender', value: funding.sponsor_gender },
-            { label: 'Address', value: funding.sponsor_address, span: 2 },
-            { label: 'Country', value: funding.sponsor_country },
-            { label: 'Contact number', value: funding.sponsor_contact_number },
-            { label: 'Email', value: funding.sponsor_email },
-            { label: 'Current profession', value: funding.sponsor_occupation },
-          ]}
-        />
-      </DetailCard>
-
-      <DetailCard title="Additional information" collapsible>
-        <DetailFields
-          fields={[
-            {
-              label:
-                'Do you join or travel with a family member from an EU country, the EEA, the Swiss Confederation, or a family member who is a UK national beneficiary of the withdrawal agreement?',
-              value: yesNo(funding.joins_eu_family_member),
-              span: 2,
-            },
-            { label: 'Other notes', value: applicant.other_notes, span: 2 },
-          ]}
-        />
-      </DetailCard>
+      <PersonalInformation applicant={applicant} reload={reload} />
+      <TravelDocuments applicant={applicant} reload={reload} />
+      <AddressContact applicant={applicant} reload={reload} />
+      <ResidencePermit applicant={applicant} reload={reload} />
+      <CurrentOccupation applicant={applicant} currencyCode={currencyCode} reload={reload} />
+      <TravelInformation applicant={applicant} caseInfo={caseInfo} reload={reload} />
+      <PreviousVisa applicant={applicant} reload={reload} />
+      <FinancingOfStay applicant={applicant} reload={reload} />
+      <AdditionalInformation applicant={applicant} reload={reload} />
     </>
   )
 }
@@ -390,7 +598,31 @@ async function openDocument(documentKey, download) {
   }
 }
 
-function DocumentsRepository({ documents }) {
+const documentForm = (row) => {
+  const form = new FormData()
+  form.append('document_name', row.document_name ?? '')
+  form.append('document_type_id', row.document_type_id)
+  if (row.file) form.append('file', row.file)
+  return form
+}
+
+// Applies the form's changes one document at a time. A failure stops there and
+// the page reloads either way, so what was already saved is shown.
+async function saveDocuments({ deleted, rows, original }, applicationId) {
+  for (const key of deleted) await apiDelete(`/api/case/document/${encodeURIComponent(key)}`)
+
+  for (const row of rows) {
+    if (!row.document_key) {
+      await apiPost(`/api/case/application/${applicationId}/document`, documentForm(row))
+      continue
+    }
+    const before = original.find((doc) => doc.document_key === row.document_key)
+    const changed = row.file || row.document_name !== before.document_name || row.document_type_id !== String(before.document_type_id ?? '')
+    if (changed) await apiPatch(`/api/case/document/${encodeURIComponent(row.document_key)}`, documentForm(row))
+  }
+}
+
+function DocumentsRepository({ documents, applicationId, reload }) {
   const [error, setError] = useState('')
 
   const open = (documentKey, download) => {
@@ -399,7 +631,22 @@ function DocumentsRepository({ documents }) {
   }
 
   return (
-    <DetailCard title="Documents repository" icon={FileText} collapsible>
+    <SectionCard
+      title="Documents repository"
+      icon={FileText}
+      collapsible
+      reload={reload}
+      locked={!applicationId}
+      onSave={async (changes) => {
+        try {
+          await saveDocuments(changes, applicationId)
+        } catch (err) {
+          await reload()
+          throw err
+        }
+      }}
+      renderForm={(save, lookups) => <DocumentsForm documents={documents} lookups={lookups} onPreview={(key) => open(key, false)} save={save} />}
+    >
       {documents.length === 0 ? (
         <p className="text-sm text-muted">No documents uploaded yet.</p>
       ) : (
@@ -459,7 +706,7 @@ function DocumentsRepository({ documents }) {
           )}
         </>
       )}
-    </DetailCard>
+    </SectionCard>
   )
 }
 
@@ -472,6 +719,7 @@ function FinancialRecord({ payments, totalPrice, money }) {
       title="Financial record"
       icon={ReceiptText}
       collapsible
+      editable={false}
       actions={
         totalPrice > 0 && (
           <span className="text-sm text-body">
@@ -503,7 +751,7 @@ function FinancialRecord({ payments, totalPrice, money }) {
 }
 
 function CustomerDetailView({ contactId }) {
-  const { customer, payments, error } = useCustomer(contactId)
+  const { customer, payments, error, reload } = useCustomer(contactId)
 
   const [search, setSearch] = useState('')
   const [applicantIndex, setApplicantIndex] = useState(0)
@@ -594,12 +842,12 @@ function CustomerDetailView({ contactId }) {
 
           {applicant ? (
             // Keyed so per-applicant state (e.g. a revealed password) resets on switching
-            <ApplicantSections key={applicant.application_id} applicant={applicant} caseInfo={customer} currencyCode={currencyCode} />
+            <ApplicantSections key={applicant.application_id} applicant={applicant} caseInfo={customer} currencyCode={currencyCode} reload={reload} />
           ) : (
             <p className="text-sm text-muted">No applicants on this case.</p>
           )}
 
-          <DocumentsRepository documents={customer.documents} />
+          <DocumentsRepository documents={customer.documents} applicationId={applicant?.application_id} reload={reload} />
           <FinancialRecord payments={payments} totalPrice={customer.total_price} money={money} />
         </div>
       </>

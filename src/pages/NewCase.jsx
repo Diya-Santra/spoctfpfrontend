@@ -8,6 +8,7 @@ import { FormCard, SectionHeading } from '../components/new-case/FormSection.jsx
 import ApplicantCard from '../components/new-case/ApplicantCard.jsx'
 import {
   DateField,
+  Form,
   OutlineButton,
   PhoneField,
   PrimaryButton,
@@ -56,8 +57,7 @@ function NewCase() {
   const noApplicants = applicants.length === 0 ? 'Add at least one applicant' : ''
   const missingDocuments = applicants.flatMap((a, i) => (a.document ? [] : [i + 1]))
 
-  const handleSubmit = (event) => {
-    event.preventDefault()
+  const handleSubmit = () => {
     setAttempted(true)
     if (noApplicants || missingDocuments.length) return
 
@@ -98,7 +98,7 @@ function NewCase() {
           {!lookups && !lookupsError && <p className="mt-8 text-sm text-muted">Loading form options…</p>}
 
           {lookups && (
-            <form onSubmit={handleSubmit} className="mt-8 flex flex-col">
+            <Form onSubmit={handleSubmit} className="mt-8 flex flex-col">
               <FormCard header={<SectionHeading icon={UserCog}>Customer lead information</SectionHeading>}>
                 <TextField id="lead-name" label="Full name*" required value={lead.fullName} onChange={(e) => setLeadField('fullName')(e.target.value)} />
                 <PhoneField
@@ -175,7 +175,7 @@ function NewCase() {
                   Save &amp; continue
                 </PrimaryButton>
               </div>
-            </form>
+            </Form>
           )}
         </main>
       </div>

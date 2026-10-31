@@ -76,6 +76,60 @@ export function useLookups() {
   return state
 }
 
+async function fetchEditLookups() {
+  const [countries, cities, visaCategories, genders, maritalStatuses, travelDocumentTypes, permitTypes, occupations, fundingSources, documentTypes] =
+    await Promise.all([
+      apiGet('/api/countries'),
+      apiGet('/api/cities'),
+      apiGet('/api/visa-categories'),
+      apiGet('/api/genders'),
+      apiGet('/api/marital-statuses'),
+      apiGet('/api/travel-document-types'),
+      apiGet('/api/permit-types'),
+      apiGet('/api/occupation-categories'),
+      apiGet('/api/funding-sources'),
+      apiGet('/api/document-types'),
+    ])
+
+  return {
+    countries: countries.map((c) => option(c.country_id, c.name)),
+    cities: cities.map((c) => option(c.city_id, c.name, { countryId: String(c.country_id) })),
+    // travel_info stores the category's code, not its id
+    visaTypes: visaCategories.map((v) => ({ value: v.code, label: v.name })),
+    genders: genders.map((g) => option(g.gender_id, g.label)),
+    maritalStatuses: maritalStatuses.map((m) => option(m.marital_status_id, m.label)),
+    travelDocumentTypes: travelDocumentTypes.map((d) => ({ value: d.code, label: d.label })),
+    permitTypes: permitTypes.map((p) => option(p.permit_type_id, p.label)),
+    occupations: occupations.map((o) => ({ value: o.code, label: o.label })),
+    fundingSources: fundingSources.map((f) => ({ value: f.code, label: f.label })),
+    documentTypes: documentTypes.map((d) => option(d.document_type_id, d.name)),
+  }
+}
+
+let cachedEdit = null
+
+/** Dropdown data for the customer page's edit forms, fetched once per page load. */
+export function useEditLookups() {
+  const [state, setState] = useState({ lookups: null, error: null })
+
+  useEffect(() => {
+    let active = true
+    cachedEdit ??= fetchEditLookups().catch((err) => {
+      cachedEdit = null
+      throw err
+    })
+    cachedEdit.then(
+      (lookups) => active && setState({ lookups, error: null }),
+      (error) => active && setState({ lookups: null, error }),
+    )
+    return () => {
+      active = false
+    }
+  }, [])
+
+  return state
+}
+
 /** Label of the option with `value`, or '' when there is none. */
 export function labelOf(options, value) {
   return options.find((o) => o.value === value)?.label ?? ''

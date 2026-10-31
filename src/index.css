@@ -24,6 +24,10 @@
   --color-priority: #3b5bdb;
   --color-priority-bg: #e8edff;
   --color-alert: #ef4444;
+  --color-danger: #d92638;       /* field errors, failure toasts */
+  --color-danger-bg: #fdf4f5;
+  --color-success: #2f9e44;
+  --color-success-bg: #f1faf3;
 
   /* Case pipeline stages (text / tinted background / badge) */
   --color-stage-created: #e03131;

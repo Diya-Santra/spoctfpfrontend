@@ -42,3 +42,17 @@ export function apiGet(path, params, signal) {
 export function apiPost(path, body) {
   return request(path, { method: 'POST', body })
 }
+
+// FormData goes out as multipart, anything else as JSON.
+function send(method, path, body) {
+  if (body instanceof FormData) return request(path, { method, body })
+  return request(path, { method, body: JSON.stringify(body), headers: { 'Content-Type': 'application/json' } })
+}
+
+export function apiPatch(path, body) {
+  return send('PATCH', path, body)
+}
+
+export function apiDelete(path) {
+  return request(path, { method: 'DELETE' })
+}

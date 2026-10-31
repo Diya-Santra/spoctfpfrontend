@@ -1,26 +1,23 @@
 import { useId, useState } from 'react'
-import { ChevronDown, ChevronUp } from 'lucide-react'
+import { ChevronDown, ChevronRight, PencilLine } from 'lucide-react'
 
 /**
  * Bordered card with an uppercase title (and optional `icon`); `collapsible` adds a chevron that
  * hides the body.
+ * The chevron sits left of the title (right when closed, down when open); `editable` (default on)
+ * adds an underlined-pencil edit button, calling `onEdit` when clicked.
  */
-export function DetailCard({ title, icon: Icon, collapsible = false, actions, children }) {
+export function DetailCard({ title, icon: Icon, collapsible = false, editable = true, onEdit, actions, children }) {
   const [open, setOpen] = useState(true)
   const bodyId = useId()
-  const Chevron = open ? ChevronUp : ChevronDown
+  const Chevron = open ? ChevronDown : ChevronRight
 
   return (
     <section className="rounded-[2px] border border-line">
       <header
         className={`flex h-14 items-center justify-between gap-4 bg-neutral-50 px-6 ${open ? 'border-b border-line' : ''}`}
       >
-        <h3 className="flex items-center gap-2.5 text-[13px] font-medium uppercase tracking-[0.12em] text-body">
-          {Icon && <Icon className="h-[18px] w-[18px] text-muted" strokeWidth={1.75} />}
-          {title}
-        </h3>
-        <div className="flex items-center gap-3">
-          {actions}
+        <div className="flex min-w-0 items-center gap-3">
           {collapsible && (
             <button
               type="button"
@@ -33,12 +30,34 @@ export function DetailCard({ title, icon: Icon, collapsible = false, actions, ch
               <Chevron className="h-[18px] w-[18px]" strokeWidth={1.75} />
             </button>
           )}
+          <h3 className="flex items-center gap-2.5 text-[13px] font-medium uppercase tracking-[0.12em] text-body">
+            {Icon && <Icon className="h-[18px] w-[18px] text-muted" strokeWidth={1.75} />}
+            {title}
+          </h3>
+        </div>
+        <div className="flex items-center gap-3">
+          {actions}
+          {editable && <EditButton label={`Edit ${title}`} onClick={onEdit} />}
         </div>
       </header>
       <div id={bodyId} className={open ? 'p-6' : 'hidden'}>
         {children}
       </div>
     </section>
+  )
+}
+
+/** Pencil-with-underline icon button used for editing a card or field. */
+export function EditButton({ label, onClick }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className="flex h-8 w-8 items-center justify-center rounded-[2px] text-muted transition-colors hover:bg-neutral-200/60 hover:text-primary"
+      aria-label={label}
+    >
+      <PencilLine className="h-[18px] w-[18px]" strokeWidth={1.75} />
+    </button>
   )
 }
 

@@ -9,6 +9,7 @@ import { OutlineButton, PrimaryButton } from '../components/ui/FormControls.jsx'
 import { formatDate, formatDateTime, formatMoney } from '../data/cases.js'
 import { labelOf, useLookups } from '../lib/lookups.js'
 import { createFullCase, describeFieldError, toE164 } from '../lib/newCase.js'
+import { useToast } from '../lib/toast.js'
 
 const STEPS = ['Details', 'Payment', 'Review']
 
@@ -17,6 +18,7 @@ function NewCaseReview() {
   const location = useLocation()
   const { from, draft } = location.state ?? {}
   const { lookups, error: lookupsError } = useLookups()
+  const toast = useToast()
 
   const [search, setSearch] = useState('')
   const [submitting, setSubmitting] = useState(false)
@@ -40,8 +42,11 @@ function NewCaseReview() {
     } catch (err) {
       setSubmitError(err)
       setSubmitting(false)
+      toast({ type: 'error', title: 'Unable to save details', message: "We couldn't save the payment details. Please try again" })
       return
     }
+
+    toast({ type: 'success', title: 'Payment details saved', message: 'Payment details have been saved successfully' })
 
     // There's no case detail page yet; the list it was started from reloads and shows the new case.
     // Replace, so the browser's back button can't land on this page and submit the case twice
